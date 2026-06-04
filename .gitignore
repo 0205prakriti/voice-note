@@ -15,5 +15,6 @@ venv/
 node_modules/
 dist/
 
-# OS
+# OSpwd
+ls
 .DS_Store

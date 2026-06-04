@@ -1,17 +1,17 @@
 import os
-import google.generativeai as genai
-from openai import OpenAI
-from fastapi import FastAPI, UploadFile, File, HTTPException
+import json
+from google import genai
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import init_db, get_connection
 from models import NoteOut
-import tempfile
 from dotenv import load_dotenv
+from pydantic import BaseModel
+
 load_dotenv()
 
 app = FastAPI()
 
-# Allow React frontend (running on port 5173) to talk to this backend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -19,41 +19,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+gemini_client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+
+class NoteInput(BaseModel):
+    text: str
 
 @app.on_event("startup")
 def startup():
     init_db()
 
 @app.post("/notes", response_model=NoteOut)
-async def create_note(audio: UploadFile = File(...)):
-    # 1. Save uploaded audio to a temp file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
-        tmp.write(await audio.read())
-        tmp_path = tmp.name
+async def create_note(note_input: NoteInput):
+    text = note_input.text
 
-    # 2. Transcribe with Whisper
-    with open(tmp_path, "rb") as f:
-        transcript = openai_client.audio.transcriptions.create(
-            model="whisper-1",
-            file=f
-        )
-    text = transcript.text
+    # Summarize + tag with Gemini
+    response = gemini_client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=f"""Analyze this voice note. Reply ONLY with JSON, no markdown:
+{{"summary": "one sentence summary", "tags": ["tag1", "tag2"]}}
 
-    # 3. Summarize + tag with Gemini
-    import json
-    response = gemini_model.generate_content(
-        f"""Analyze this voice note. Reply ONLY with JSON, no markdown:
-    {{"summary": "one sentence summary", "tags": ["tag1", "tag2"]}}
-
-    Note: {text}"""
+Note: {text}"""
     )
     parsed = json.loads(response.text)
     summary = parsed.get("summary", "")
     tags = ",".join(parsed.get("tags", []))
 
-    # 4. Save to database
+    # Save to database
     conn = get_connection()
     cursor = conn.execute(
         "INSERT INTO notes (text, summary, tags) VALUES (?, ?, ?)",
