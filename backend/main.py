@@ -31,20 +31,9 @@ def startup():
 @app.post("/notes", response_model=NoteOut)
 async def create_note(note_input: NoteInput):
     text = note_input.text
+    summary = ""
+    tags = ""
 
-    # Summarize + tag with Gemini
-    response = gemini_client.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=f"""Analyze this voice note. Reply ONLY with JSON, no markdown:
-{{"summary": "one sentence summary", "tags": ["tag1", "tag2"]}}
-
-Note: {text}"""
-    )
-    parsed = json.loads(response.text)
-    summary = parsed.get("summary", "")
-    tags = ",".join(parsed.get("tags", []))
-
-    # Save to database
     conn = get_connection()
     cursor = conn.execute(
         "INSERT INTO notes (text, summary, tags) VALUES (?, ?, ?)",
