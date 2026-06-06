@@ -11,15 +11,13 @@ export default function Recorder({ onNoteSaved }) {
   function startRecording() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
-      setError("Speech recognition not supported — use Chrome or Edge");
+      setError("Use Chrome or Edge for speech recognition");
       return;
     }
-
     const recognition = new SR();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = "en-US";
-
     let finalText = "";
 
     recognition.onresult = (e) => {
@@ -55,7 +53,7 @@ export default function Recorder({ onNoteSaved }) {
       const note = await uploadNote(transcript.trim());
       onNoteSaved(note);
       setTranscript("");
-    } catch (err) {
+    } catch {
       setError("Could not save. Is the backend running?");
     } finally {
       setLoading(false);
@@ -63,48 +61,59 @@ export default function Recorder({ onNoteSaved }) {
   }
 
   return (
-    <div style={{ marginBottom: "1.5rem" }}>
-      <div style={{ textAlign: "center", marginBottom: "1rem" }}>
+    <div>
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: "1rem" }}>
         <button
           onClick={recording ? stopRecording : startRecording}
           disabled={loading}
           style={{
-            padding: "1rem 2rem",
-            borderRadius: "999px",
-            fontSize: "1rem",
-            background: recording ? "#e24b4a" : "#222",
-            color: "#fff",
+            width: "64px",
+            height: "64px",
+            borderRadius: "50%",
             border: "none",
+            background: recording ? "#e24b4a" : "#111",
+            color: "#fff",
+            fontSize: "24px",
             cursor: loading ? "not-allowed" : "pointer",
+            boxShadow: recording ? "0 0 0 8px rgba(226,75,74,0.15)" : "0 2px 8px rgba(0,0,0,0.15)",
+            transition: "all 0.2s",
           }}
         >
-          {recording ? "⏹ Stop" : "🎙 Record"}
+          {recording ? "⏹" : "🎙"}
         </button>
       </div>
 
+      <p style={{ textAlign: "center", fontSize: "0.85rem", color: "#aaa", marginBottom: "1rem" }}>
+        {loading ? "Saving..." : recording ? "Recording — click to stop" : "Click to record"}
+      </p>
+
       {transcript && (
-        <div style={{ marginBottom: "1rem" }}>
-          <p style={{
-            background: "#f5f5f5",
-            padding: "12px",
-            borderRadius: "8px",
+        <div>
+          <div style={{
+            background: "#f9fafb",
+            border: "1px solid #e4e4e7",
+            borderRadius: "10px",
+            padding: "12px 14px",
             fontSize: "0.95rem",
-            lineHeight: 1.6
+            lineHeight: 1.7,
+            color: "#333",
+            marginBottom: "10px",
+            minHeight: "60px",
           }}>
             {transcript}
-          </p>
+          </div>
           <button
             onClick={saveNote}
             disabled={loading}
             style={{
-              marginTop: "8px",
               width: "100%",
-              padding: "10px",
-              borderRadius: "8px",
-              background: "#1a73e8",
+              padding: "11px",
+              borderRadius: "10px",
+              background: "#111",
               color: "#fff",
               border: "none",
               fontSize: "0.95rem",
+              fontWeight: 500,
               cursor: loading ? "not-allowed" : "pointer",
             }}
           >
@@ -113,7 +122,11 @@ export default function Recorder({ onNoteSaved }) {
         </div>
       )}
 
-      {error && <p style={{ color: "red", fontSize: "0.9rem" }}>{error}</p>}
+      {error && (
+        <p style={{ color: "#e24b4a", fontSize: "0.85rem", marginTop: "8px", textAlign: "center" }}>
+          {error}
+        </p>
+      )}
     </div>
   );
 }
