@@ -63,3 +63,36 @@ def delete_note(note_id: int):
     conn.commit()
     conn.close()
     return {"ok": True}
+
+class QuestionInput(BaseModel):
+    question: str
+
+@app.post("/ask")
+async def ask_notes(q: QuestionInput):
+    # Get all notes from database
+    conn = get_connection()
+    notes = conn.execute("SELECT text, created_at FROM notes ORDER BY created_at DESC").fetchall()
+    conn.close()
+
+    if not notes:
+        return {"answer": "You don't have any notes yet. Record some first!"}
+
+    # Format notes for Gemini
+    notes_text = "\n\n".join([
+        f"[{dict(n)['created_at']}]: {dict(n)['text']}"
+        for n in notes
+    ])
+
+    response = gemini_client.models.generate_content(
+        model="gemini-2.0-flash-lite",
+        contents=f"""You are a personal assistant. The user has these voice notes:
+
+{notes_text}
+
+Answer this question based only on the notes above. Be concise and helpful.
+If the answer isn't in the notes, say so.
+
+Question: {q.question}"""
+    )
+
+    return {"answer": response.text}
