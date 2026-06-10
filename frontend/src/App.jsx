@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Recorder from "./components/Recorder";
 import NoteCard from "./components/NoteCard";
 import { fetchNotes } from "./api";
+import AskBar from "./components/AskBar";
 
 export default function App() {
   const [notes, setNotes] = useState([]);
@@ -47,6 +48,7 @@ export default function App() {
 
       <div style={{ maxWidth: "680px", margin: "0 auto", padding: "2rem 1rem" }}>
         {/* Record card */}
+        <AskBar />
         <div style={{
           background: "#fff",
           borderRadius: "16px",
