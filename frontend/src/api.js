@@ -15,3 +15,8 @@ export async function fetchNotes() {
 export async function deleteNote(id) {
   await axios.delete(`${BASE}/notes/${id}`);
 }
+
+export async function askNotes(question) {
+  const res = await axios.post(`${BASE}/ask`, { question });
+  return res.data.answer;
+}
