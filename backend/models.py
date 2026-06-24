@@ -6,4 +6,5 @@ class NoteOut(BaseModel):
     text: str
     summary: Optional[str] = None
     tags: Optional[str] = None
+    folder: Optional[str] = "General"
     created_at: str
